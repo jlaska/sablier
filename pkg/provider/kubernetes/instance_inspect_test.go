@@ -38,7 +38,7 @@ func TestKubernetesProvider_InstanceInspect(t *testing.T) {
 			args: args{
 				name: "service_default_my-service_1",
 			},
-			want: fmt.Errorf("unsupported kind \"service\" must be one of \"deployment\", \"statefulset\", \"cnpgcluster\""),
+			want: fmt.Errorf("unsupported kind \"service\" must be one of \"deployment\", \"statefulset\", \"cnpgcluster\", \"redis\""),
 		},
 	}
 	c := sharedKinD

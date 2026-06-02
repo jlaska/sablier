@@ -34,6 +34,13 @@ func (p *Provider) InstanceStart(ctx context.Context, name string) (err error) {
 		return p.clusterHibernate(ctx, parsed, false)
 	}
 
+	// Redis instances are resumed by scaling the StatefulSet to 1 and then removing
+	// the skip-reconcile annotation, so they also bypass the scale-mode logic.
+	if parsed.Kind == KindRedis {
+		span.SetAttributes(attribute.String("operation", "redis_start"))
+		return p.redisStart(ctx, parsed)
+	}
+
 	labels, err := p.getWorkloadLabels(ctx, parsed)
 	if err != nil {
 		return err

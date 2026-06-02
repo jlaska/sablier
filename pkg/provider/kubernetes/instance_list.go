@@ -23,8 +23,14 @@ func (p *Provider) InstanceList(ctx context.Context, options provider.InstanceLi
 		return nil, err
 	}
 
+	redisList, err := p.RedisList(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	instances := append(deployments, statefulSets...)
 	instances = append(instances, clusters...)
+	instances = append(instances, redisList...)
 	return instances, nil
 }
 
@@ -44,6 +50,11 @@ func (p *Provider) InstanceGroups(ctx context.Context) (map[string][]string, err
 		return nil, err
 	}
 
+	redisGroups, err := p.RedisGroups(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	groups := make(map[string][]string)
 	maps.Copy(groups, deployments)
 
@@ -52,6 +63,10 @@ func (p *Provider) InstanceGroups(ctx context.Context) (map[string][]string, err
 	}
 
 	for group, instances := range clusters {
+		groups[group] = append(groups[group], instances...)
+	}
+
+	for group, instances := range redisGroups {
 		groups[group] = append(groups[group], instances...)
 	}
 

@@ -25,5 +25,10 @@ func (p *Provider) InstanceEvents(ctx context.Context, opts provider.InstanceEve
 		informer = p.watchClusters(ctx, eventsC, wantStopped, wantStarted, wantCreated, wantRemoved)
 		go informer.Run(ctx.Done())
 	}
+	// Only watch Redis instances when the redis-operator CRD is present.
+	if p.redisCRDInstalled(ctx) {
+		informer = p.watchRedis(ctx, eventsC, wantStopped, wantStarted, wantCreated, wantRemoved)
+		go informer.Run(ctx.Done())
+	}
 	return sablier.InstanceEventStream{Events: eventsC, Err: errC}
 }

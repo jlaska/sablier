@@ -34,6 +34,13 @@ func (p *Provider) InstanceStop(ctx context.Context, name string) (err error) {
 		return p.clusterHibernate(ctx, parsed, true)
 	}
 
+	// Redis instances are stopped by setting the skip-reconcile annotation and then
+	// scaling the StatefulSet to 0, so they also bypass the scale-mode logic.
+	if parsed.Kind == KindRedis {
+		span.SetAttributes(attribute.String("operation", "redis_stop"))
+		return p.redisStop(ctx, parsed)
+	}
+
 	labels, err := p.getWorkloadLabels(ctx, parsed)
 	if err != nil {
 		return err
