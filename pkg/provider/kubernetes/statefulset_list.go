@@ -24,6 +24,9 @@ func (p *Provider) StatefulSetList(ctx context.Context) ([]sablier.InstanceConfi
 
 	instances := make([]sablier.InstanceConfiguration, 0, len(statefulSets.Items))
 	for _, ss := range statefulSets.Items {
+		if isOwnedByRedis(&ss) {
+			continue
+		}
 		instance := p.statefulSetToInstance(&ss)
 		instances = append(instances, instance)
 	}
@@ -62,6 +65,9 @@ func (p *Provider) StatefulSetGroups(ctx context.Context) (map[string][]string, 
 
 	groups := make(map[string][]string)
 	for _, ss := range statefulSets.Items {
+		if isOwnedByRedis(&ss) {
+			continue
+		}
 		parsed := StatefulSetName(&ss, ParseOptions{Delimiter: p.delimiter})
 		for _, groupName := range sablier.ParseGroups(ss.Labels["sablier.group"]) {
 			groups[groupName] = append(groups[groupName], parsed.Original)
@@ -69,4 +75,19 @@ func (p *Provider) StatefulSetGroups(ctx context.Context) (map[string][]string, 
 	}
 
 	return groups, nil
+}
+
+// isOwnedByRedis reports whether a StatefulSet is controlled by an
+// OT-CONTAINER-KIT Redis CR. Those StatefulSets are managed by Sablier via
+// the Redis provider (which also handles the skip-reconcile annotation), so the
+// StatefulSet provider must not manage them independently.
+func isOwnedByRedis(ss *v1.StatefulSet) bool {
+	for _, ref := range ss.OwnerReferences {
+		if ref.Controller != nil && *ref.Controller &&
+			ref.Kind == "Redis" &&
+			ref.APIVersion == redisGVR.Group+"/"+redisGVR.Version {
+			return true
+		}
+	}
+	return false
 }
